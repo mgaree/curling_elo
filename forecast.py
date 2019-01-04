@@ -3,7 +3,7 @@
 """
 This file:
 - reads input csv of teams and their initial Elo ratings (e.g. at start of season/tournament)
---- filename hardcoded to data/initial_elos.csv
+--- filename defaults to ./data/initial_elos.csv
 - reads input csv of games history with results and scheduled games
 --- filename passed to Forecast.forecast()
 - forecasts win probabilities for all games
@@ -24,6 +24,8 @@ rating for those games.
 import csv
 import math
 
+from util import Util
+
 K = 20.0  # The speed at which Elo ratings change; same value as 538's NFL Elo
 REVERT = 1/3.0  # Between seasons, a team retains 2/3 of its previous season's rating
 MEAN_ELO = 1600.0  # Average/initial Elo rating used for between-season reversion; 538 NFL uses 1505
@@ -36,19 +38,10 @@ class Forecast:
         """ Generates win probabilities in the elo_prob1 field for each game based on Elo model """
 
         # Initialize team objects to maintain ratings
-        teams = {}
-        for row in [item for item in csv.DictReader(open("data/initial_elos.csv"))]:
-            teams[row['team']] = {
-                'name': row['team'],
-                'season': None,  # tracker to handle between-season rating reversion
-                'elo': float(row['elo'])
-            }
+        teams = Util.read_initial_elos()
 
         # Load games history
-        games = [item for item in csv.DictReader(open(games_filename))]
-        for game in games:
-            game['elo_prob1'] = float(game['elo_prob1']) if game['elo_prob1'] != '' else None
-            game['result1'] = float(game['result1']) if game['result1'] != '' else None
+        games = Util.read_games(games_filename)
 
         # For each game, compute Elo-based win probability & update Elo ratings for completed games
         for game in games:
@@ -61,18 +54,20 @@ class Forecast:
                     team['elo'] = MEAN_ELO*REVERT + team['elo']*(1-REVERT)
                 team['season'] = game['season']
 
-            # Update games entry with pre-game Elo ratings for later file writing
+            # Update games entry with pre-game, post-reversion Elo ratings for later file writing
             game['elo1'] = team1['elo']
             game['elo2'] = team2['elo']
 
+            # Difference in team Elo ratings alone used in Elo probability calculation
             elo_diff = team1['elo'] - team2['elo']
 
             # This is the most important piece, where we forecast the win probability for team1
             game['elo_prob1'] = 1.0 / (math.pow(10.0, (-elo_diff/400.0)) + 1.0)
 
-            # If game was played, maintain team Elo ratings
+            # If game was played, adjust team Elo ratings
             if game['result1'] is not None:
-                # This system ignores game points and autocorrelation; FiveThirtyEight does not
+                # This system ignores game points; FiveThirtyEight does not
+                # Previously had a note about autocorrelation, but it only applies for game points
 
                 # Elo shift based on K
                 shift = K * (game['result1'] - game['elo_prob1'])
@@ -81,30 +76,4 @@ class Forecast:
                 team1['elo'] += shift
                 team2['elo'] -= shift
 
-        Forecast.save_forecast(games, games_filename)
-
-    @staticmethod
-    def save_forecast(games, games_filename):
-        """ Write to file """
-        save_filename = games_filename + ".forecasted.csv"
-        fieldnames = 'date,season,playoff,team1,team2,result1,elo1,elo2,elo_prob1'.split(',')
-
-        with open(save_filename, 'w', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(map(Forecast.format_game_entry, games))
-
-        print("Forecast saved to " + save_filename)
-
-    @staticmethod
-    def format_game_entry(game):
-        """ Apply text formatting to game entry before writing to file """
-        g = game.copy()
-
-        if g['result1'] is not None and g['result1'] != 0.5:
-            g['result1'] = int(g['result1'])
-
-        for field in ['elo1', 'elo2', 'elo_prob1']:
-            g[field] = "%.5f" % g[field]
-
-        return g
+        Util.write_games(games, games_filename + ".forecasted.csv")
