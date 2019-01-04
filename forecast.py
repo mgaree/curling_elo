@@ -21,7 +21,6 @@ rating for those games.
 """
 
 
-import csv
 import math
 
 from util import Util
@@ -73,6 +72,7 @@ class Forecast:
                 shift = K * (game['result1'] - game['elo_prob1'])
 
                 # Apply shift to get post-game Elo rating; will be pre-game rating for team's next game
+                # Note: final Elo ratings will not be saved to a file; could add as future mod
                 team1['elo'] += shift
                 team2['elo'] -= shift
 
