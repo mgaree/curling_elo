@@ -1,0 +1,11 @@
+date,season,playoff,team1,team2,result1,elo1,elo2,elo_prob1
+x,x,0,A,B,1,,,
+x,x,0,A,D,1,,,
+x,x,0,A,E,1,,,
+x,x,0,B,C,1,,,
+x,x,0,B,D,1,,,
+x,x,0,B,E,1,,,
+x,x,0,C,A,1,,,
+x,x,0,C,D,1,,,
+x,x,0,C,E,1,,,
+x,x,0,D,E,1,,,
