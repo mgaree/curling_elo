@@ -14,7 +14,7 @@ class Util:
 
     @staticmethod
     def read_games(filename):
-        """ Load games history from file. """
+        """ Load games history from file. Return list of dicts. """
         games = [item for item in csv.DictReader(open(filename))]
 
         # apply typecasting to data
@@ -38,7 +38,7 @@ class Util:
 
     @staticmethod
     def read_initial_elos(filename="data/initial_elos.csv"):
-        """ Read initial Elo ratings for teams """
+        """ Read initial Elo ratings for teams. Return dict of {team name: team data dict}. """
         teams = {}
         for row in [item for item in csv.DictReader(open(filename))]:
             teams[row['team']] = {
