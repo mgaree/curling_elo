@@ -31,6 +31,7 @@ MEAN_ELO = 1600.0  # Average/initial Elo rating used for between-season reversio
 
 
 class Forecast:
+    """ Container class for forecasting and Elo scoring methods """
 
     @staticmethod
     def forecast(games_filename):
@@ -57,23 +58,36 @@ class Forecast:
             game['elo1'] = team1['elo']
             game['elo2'] = team2['elo']
 
-            # Difference in team Elo ratings alone used in Elo probability calculation
-            elo_diff = team1['elo'] - team2['elo']
-
-            # This is the most important piece, where we forecast the win probability for team1
-            game['elo_prob1'] = 1.0 / (math.pow(10.0, (-elo_diff/400.0)) + 1.0)
+            # Forecast the win probability for team1
+            game['elo_prob1'] = Forecast.get_elo_prob(team1, team2)
 
             # If game was played, adjust team Elo ratings
             if game['result1'] is not None:
                 # This system ignores game points; FiveThirtyEight does not
                 # Previously had a note about autocorrelation, but it only applies for game points
-
-                # Elo shift based on K
-                shift = K * (game['result1'] - game['elo_prob1'])
-
-                # Apply shift to get post-game Elo rating; will be pre-game rating for team's next game
-                # Note: final Elo ratings will not be saved to a file; could add as future mod
-                team1['elo'] += shift
-                team2['elo'] -= shift
+                Forecast.update_team_elo_ratings(team1, team2, game)
 
         Util.write_games(games, games_filename + ".forecasted.csv")
+
+    @staticmethod
+    def get_elo_prob(team1, team2):
+        """ Computes win probability for team1 based on Elo ratings of both teams """
+
+        # Difference in team Elo ratings alone used in Elo probability calculation
+        elo_diff = team1['elo'] - team2['elo']
+
+        # This is the most important piece, where we forecast the win probability for team1
+        elo_prob = 1.0 / (math.pow(10.0, (-elo_diff/400.0)) + 1.0)
+        return elo_prob
+
+    @staticmethod
+    def update_team_elo_ratings(team1, team2, game):
+        """ Adjust team Elo ratings based on game result and prior win probability """
+
+        # Elo shift based on K
+        shift = K * (game['result1'] - game['elo_prob1'])
+
+        # Apply shift to get post-game Elo rating; will be pre-game rating for team's next game
+        # Note: final Elo ratings will not be saved to a file; could add as future mod
+        team1['elo'] += shift
+        team2['elo'] -= shift
