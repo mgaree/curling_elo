@@ -17,7 +17,7 @@ class Util:
         """ Load games history from file. Return list of dicts. """
         games = [item for item in csv.DictReader(open(filename))]
 
-        # apply typecasting to data
+        # apply typecasting to data -- csv reads everyting as strings
         for game in games:
             game['elo_prob1'] = float(game['elo_prob1']) if game['elo_prob1'] != '' else None
             game['result1'] = float(game['result1']) if game['result1'] != '' else None
@@ -27,7 +27,7 @@ class Util:
     @staticmethod
     def write_games(games, filename):
         """ Write games data to file """
-        fieldnames = 'date,season,playoff,team1,team2,result1,elo1,elo2,elo_prob1'.split(',')
+        fieldnames = 'date,season,phase,flight,team1,team2,result1,elo1,elo2,elo_prob1'.split(',')
 
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
